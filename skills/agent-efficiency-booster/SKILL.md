@@ -1,99 +1,98 @@
 ---
 name: agent-efficiency-booster
-description: Use this skill when you need to reduce Agent runtime cost and improve completion speed for LLM/agent tasks by applying budget-first planning, retrieval compression, model routing, and parallelizable execution patterns.
+description: 当用户希望在保持质量的前提下，降低 Agent/LLM 任务成本并提升完成速度时，使用本技能。核心方法包括预算优先、ROI 分流、模型路由、上下文压缩与并行执行。
 ---
 
-# Agent Efficiency Booster
+# Agent Efficiency Booster（中文）
 
-## When to use
-Use this skill when the user asks to:
-- Reduce token/API cost
-- Improve task completion latency
-- Increase agent throughput under a fixed budget
-- Build an "efficient agent" workflow for coding/research/productivity tasks
+## 适用场景
+当用户希望实现以下目标时使用本技能：
+- 降低 token/API 成本
+- 缩短任务完成时延
+- 在固定预算下提高吞吐量
+- 构建“高效率 Agent”工作流（编码/研究/文档生产）
 
-## Output contract
-Always return:
-1. **Efficiency plan** (what to run in which order)
-2. **Expected savings** (cost/time estimate range)
-3. **Risk controls** (quality guardrails)
-4. **Execution checklist** (copy-paste commands/prompts)
+## 输出契约
+每次执行都应返回：
+1. **效率执行计划**（按顺序说明先做什么）
+2. **预期收益**（成本/时间节省区间）
+3. **风险控制**（质量守护与止损条件）
+4. **执行清单**（可直接复制的命令/提示词）
 
-## Workflow (strict order)
+## 工作流（严格顺序）
 
-### 1) Budget-first framing (max 60 seconds)
-Before solving, set explicit constraints:
-- Max budget (tokens/$/minutes)
-- Quality bar (must-pass checks)
-- Deadline (soft/hard)
+### 1）预算优先框定（60 秒内）
+在开始解题前先明确约束：
+- 最大预算（tokens / 美元 / 分钟）
+- 质量门槛（必须通过的检查）
+- 截止时间（软/硬）
 
-If user gives no numbers, use defaults:
+若用户未给出数字，使用默认值：
 - `max_cost_reduction_target = 30%`
 - `max_latency_reduction_target = 40%`
 - `quality_drop_tolerance = <= 5%`
 
-### 2) Task triage with ROI scoring
-Split into subtasks and classify each as:
-- **H (heavy reasoning)**: architecture, ambiguous debugging, complex synthesis
-- **M (medium)**: refactor, integration, precise edits
-- **L (light/repetitive)**: formatting, boilerplate, file ops, deterministic transforms
+### 2）子任务 ROI 分流
+将任务拆分并分类：
+- **H（重推理）**：架构设计、复杂调试、模糊需求综合
+- **M（中复杂）**：重构、集成、精确编辑
+- **L（轻量/重复）**：格式化、模板代码、文件处理、确定性转换
 
-Run `scripts/roi_triage.py` with rough estimates to identify highest ROI optimizations first.
+使用 `scripts/roi_triage.py` 基于粗粒度估算进行排序，优先优化 ROI 最高环节。
 
-### 3) Model/tool routing policy
-Route by task type:
-- **H**: strongest model, low temperature, fewer retries
-- **M**: balanced model
-- **L**: cheapest reliable model or script/tool call first
+### 3）模型/工具路由策略
+按任务类型路由：
+- **H**：最强模型、低温度、低重试次数
+- **M**：均衡模型
+- **L**：优先脚本/工具；再考虑低成本可靠模型
 
-Rule: if a task can be done by deterministic script, **script before model**.
+规则：若任务可由确定性脚本完成，**脚本优先于模型**。
 
-### 4) Context compression policy
-- Keep active context to minimum needed files/chunks
-- Prefer structured summaries over raw dumps
-- Re-load source on demand; do not carry stale long context
-- Cap per-step context size (recommended: 3–8 snippets)
+### 4）上下文压缩策略
+- 活跃上下文只保留“当前步骤所需”的最小片段
+- 优先结构化摘要，避免大段原文堆叠
+- 按需回读源码，不长期携带陈旧长上下文
+- 限制单步上下文规模（建议 3–8 个片段）
 
-### 5) Parallelization policy
-Parallelize only independent L/M tasks:
-- Shared-read, disjoint-write
-- One merge/sanity pass at the end
+### 5）并行执行策略
+只并行独立的 L/M 类任务：
+- 共享读取、互斥写入
+- 最后统一做一次合并与 sanity check
 
-Never parallelize tasks that mutate the same file region.
+禁止并行修改同一文件区域。
 
-### 6) Early-exit and stop-loss
-Stop and report when:
-- Estimated extra cost exceeds remaining budget
-- Marginal quality gain is low
-- Repeated retries exceed threshold (default: 2)
+### 6）提前退出与止损
+满足以下任一条件应停止并汇报：
+- 预计额外成本超过剩余预算
+- 边际质量收益显著下降
+- 连续重试超过阈值（默认：2）
 
-Return best-so-far plus gap list instead of burning budget.
+返回“当前最优结果 + 差距清单”，避免继续烧预算。
 
-### 7) Quality guardrails (must run)
-Minimum checks:
-- Syntax/lint
-- Targeted tests for touched area
-- Diff review for accidental scope creep
+### 7）质量守护（必须执行）
+最低检查项：
+- 语法/Lint
+- 变更范围内的定向测试
+- Diff 复查，防止无关范围膨胀
 
-If checks fail, roll back expensive branches and choose cheapest fix path.
+若检查失败，回退高成本分支并选择最低成本修复路径。
 
-## Quick prompt template
-Use this template when applying the skill:
+## 快速提示词模板
 
 ```text
-Apply Agent Efficiency Booster:
-- Budget cap: <cost/time/token>
-- Quality bar: <tests/acceptance>
-- Deadline: <time>
-- Task: <goal>
+应用 Agent Efficiency Booster：
+- 预算上限：<cost/time/token>
+- 质量门槛：<tests/acceptance>
+- 截止时间：<time>
+- 任务目标：<goal>
 
-Return:
-1) ROI triage table (H/M/L + savings)
-2) Routed execution plan (model/tool per step)
-3) Parallelization map
-4) Stop-loss thresholds
-5) Final checklist
+请返回：
+1) ROI 分流表（H/M/L + 节省估计）
+2) 路由执行计划（每步使用的模型/工具）
+3) 并行执行映射
+4) 止损阈值
+5) 最终执行清单
 ```
 
-## References
-- ROI triage helper: `scripts/roi_triage.py`
+## 参考
+- ROI 分流脚本：`scripts/roi_triage.py`
